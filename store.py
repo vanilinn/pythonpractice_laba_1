@@ -5,6 +5,7 @@ from item import Item
 from order import Order
 from provider import Provider
 from storekeeper import Storekeeper
+import console_view
 
 import math
 
@@ -21,66 +22,69 @@ class Store:
         self.list_of_orders_in_process: list[Order] = []
         self.schedule = schedule
 
-    def send_request(self, request: list[Item]):
+    def send_request(self, request: list[Item], reason="поставка"):
+        arrived = []
         for provider in self.list_of_providers:
             response = provider.send_order(request)
             for elem in response:
                 elem.store_id = self.id_of_store
             provider.update_stocks()
             self.stock.extend(response)
+            arrived.extend(response)
+        console_view.print_supply(self.id_of_store, arrived, reason)
 
     # send_request - отправить заказ для провайдера (что привезти)
 
     def take_order(self, order: Order):  # принять заказ и начать его обрабатывать
-        print(f'Предметы в заказе: {[item.title for item in order.items]}')
+        missing = []
         for item in order.items:
             if item in self.stock:
                 self.stock.remove(item)
                 order.existing_items.append(item)
             else:
-                print(f'Предмета {item.title} нет в наличии в магазине {self.id_of_store}')
+                missing.append(item.title)
         # order.existing_items = [item for item in order.items if item in self.stock]
-        self.send_request(order.existing_items)
         if len(order.existing_items) == 0:
-            print('Нет предметов в наличии')
+            console_view.print_nothing_in_stock(order)
             return None
-        if len(order.existing_items) < len(order.items):
-            command = ''
-            while command != 'yes' and command != 'no':
-                command = input(
-                    f'Некоторых предметов нет в наличии в магазине {self.id_of_store}. Продолжить? yes/no\n')
+        if missing:
+            command = console_view.ask_partial_order(self.id_of_store, missing)
             if command == 'no':
-                print(f'Заказ {order.id} отменен')
+                returned = list(order.existing_items)
+                self.stock.extend(returned)
+                order.existing_items.clear()
+                order.status = 'отменен'
+                order.comment = f"на склад возвращено: {', '.join(item.title for item in returned)}"
+                console_view.print_order_cancelled(order, returned)
                 return None
-            else:
-                print('Отлично, продолжим')
+            console_view.print_order_continued()
+        self.send_request(order.existing_items, reason="пополнение")
         # self.send_request(order.existing_items)
         order.time_to_assemble = len(order.existing_items) * 45
         order.time_to_deliver = 60 + round(math.sqrt(
             (self.coords[0] - order.user_coords[0]) ** 2 + (self.coords[1] - order.user_coords[1]) ** 2)) * 30 + 60
+        console_view.print_timing(order)
         if len(self.list_of_couriers) == 0:
-            print('Нет свободных курьеров')
+            console_view.print_no_couriers()
             return None
         elif len(self.list_of_storekeepers) == 0:
-            print('Нет свободных кладовщиков')
+            console_view.print_no_storekeepers()
             return None
         for storekeeper in self.list_of_storekeepers:
             time_left = (storekeeper.get_job_end() - order.time_start).total_seconds()
             if storekeeper.get_status() == 'свободен' and time_left >= order.time_to_assemble and storekeeper.get_job_start() <= order.time_start:
-                print(f'Кладовщик {storekeeper.get_name()} соберет заказ {order.id}')
                 order.status = 'собирается'
                 order.assembler = storekeeper.get_worker_id()
                 storekeeper.order_id = order.id
                 storekeeper.get_order(self, order)
                 break
         if not order.assembler:
-            print('Заказ не успеют собрать')
+            console_view.print_assemble_too_late()
             return None
         for courier in self.list_of_couriers:
             time_left = (courier.get_job_end() - order.time_start).total_seconds() - order.time_to_assemble
             if courier.get_status() == 'свободен' and time_left >= order.time_to_deliver and courier.get_job_start() <= order.time_start + timedelta(
                     seconds=order.time_to_assemble):
-                print(f'Курьер {courier.get_name()} доставит заказ {order.id}')
                 order.status = 'доставляется'
                 order.courier = courier.get_worker_id()
                 courier.order_id = order.id
@@ -88,7 +92,7 @@ class Store:
                 break
 
         if not order.courier:
-            print('Заказ не успеют доставить')
+            console_view.print_delivery_too_late()
             return None
 
     def get_worker(self, worker):
@@ -102,4 +106,14 @@ class Store:
     # взять работника к себе и дать ему смену
 
     def __str__(self):
-        return f'{[f"Товар {el.title} стоимостью {el.cost} из магазина {el.store_id} от поставщика {el.provider_id}" for el in self.__stock]}'
+        lines = [
+            f"Магазин {self.id_of_store}, координаты {console_view.format_coords(self.coords)}",
+            "График: " + console_view.format_hours(self.schedule[0], self.schedule[1]),
+            "Склад:",
+        ]
+        if not self.stock:
+            lines.append("  пусто")
+        else:
+            for el in self.stock:
+                lines.append("  " + console_view.item_line(el))
+        return "\n".join(lines)

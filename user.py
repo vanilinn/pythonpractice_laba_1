@@ -4,6 +4,7 @@ from datetime import datetime
 
 from item import Item
 from order import Order
+import console_view
 
 
 class User:
@@ -31,9 +32,9 @@ class User:
     # сделать заказ
 
     def take_order(self):
-        print('Заказ принят')
+        console_view.print_user_accepted()
 
     # забрать заказ
 
     def __str__(self):
-        return f'Пользователь {self.name} с координатами {self.coords}'
+        return f"{self.name} {console_view.format_coords(self.coords)}"

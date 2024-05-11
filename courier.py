@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 from order import Order
 from worker import Worker
+import console_view
 import utils
 
 
@@ -32,20 +33,22 @@ class Courier(Worker):
         self.__store_id = store.id_of_store  # Записываем идентификатор магазина
         self.__status = 'свободен'  # Устанавливаем статус "свободен" для курьера
         store.get_worker(self)  # Добавляем курьера в список работников магазина
-        print(f'Курьер {self.__name} вышел на работу в магазин {store.id_of_store} на {job_time} часов')
+        console_view.print_shift_started(
+            "курьер", self.__name, store.id_of_store, job_time, self.__job_start, self.__job_end
+        )
 
     def get_order(self, store, order: Order):
         # Метод для получения заказа курьером
         job_time = order.time_to_deliver  # Время, необходимое на доставку заказа
         self.__status = 'доставляет'  # Устанавливаем статус "доставляет" для курьера
-        print(f'Курьер {self.__name} доставит заказ {order.id} через {job_time // 60} минут и {job_time % 60} секунд')
+        console_view.print_delivery_started(self.__name, order)
         self.__status = 'возвращается'  # Устанавливаем статус "возвращается" для курьера
-        print(f'Курьер {self.__name} доставил заказ {order.id} пользователю {order.user_id}')
         order.status = 'доставлен'  # Устанавливаем статус заказа как "доставлен"
-        print(f'Заказ {order.id} доставлен курьером {self.__name}')
+        console_view.print_order_status(order, self.__name)
+        console_view.print_receipt(order)
         if utils.is_courier_a_schoolboy():
             # Проверяем, является ли курьер школьником с помощью функции из модуля utils
-            print(f'Курьер {self.__name} не вернулся в магазин {store.id_of_store}, увы, не видать ему денег :(')
+            console_view.print_courier_left_without_pay(self.__name, store.id_of_store)
             self.__job_start = self.__job_end  # Переопределяем время начала смены курьера
             self.__order_id = None  # Обнуляем идентификатор заказа
             self.__status = 'уволен'  # Устанавливаем статус "уволен" для курьера
@@ -54,11 +57,12 @@ class Courier(Worker):
             self.__job_start = order.time_start + timedelta(
                 seconds=job_time * 2 - 60)  # Вычисляем время возвращения курьера в магазин
             # print(self.__job_start)
-            print(f'Курьер {self.__name} вернулся в магазин {store.id_of_store}')
+            console_view.print_courier_back(self.__name, store.id_of_store, self.__job_start)
             self.__status = 'свободен'  # Устанавливаем статус "свободен" для курьера
+            earned = job_time * 5 // 60
             self.set_balance(
-                self.get_balance() + job_time * 5 // 60)  # Добавляем к балансу курьера оплату за доставку заказа
-            print(f'Курьер {self.__name} заработал {job_time * 5 // 60} рублей')
+                self.get_balance() + earned)  # Добавляем к балансу курьера оплату за доставку заказа
+            console_view.print_courier_pay(self.__name, earned, self.get_balance())
             self.__order_id = None  # Обнуляем идентификатор заказа
 
     def get_job_start(self):
@@ -95,4 +99,7 @@ class Courier(Worker):
         self.__status = status
 
     def __str__(self):
-        return f'Курьер {self.__name} {self.__status} в магазине {self.__store_id} с {self.__job_start} до {self.__job_end}'
+        return (
+            f"Курьер {self.__name}, {self.__status}, магазин {self.__store_id}, "
+            f"{console_view.format_money(self.__balance)}"
+        )

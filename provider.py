@@ -1,4 +1,5 @@
 from item import Item
+import console_view
 
 
 class Provider:  # поставщик
@@ -21,4 +22,15 @@ class Provider:  # поставщик
         self.__current_stock = self.__stock
 
     def __str__(self):
-        return f'{[f"Товар {el.title} стоимостью {el.cost} из магазина {el.store_id} от поставщика {el.provider_id}" for el in self.__current_stock]} / {[f"Товар {elem.title} стоимостью {elem.cost} из магазина {elem.store_id} от поставщика {elem.provider_id}" for elem in self.__stock]}'
+        def block(title, goods):
+            if not goods:
+                body = "    пусто"
+            else:
+                body = "\n".join(f"    {console_view.item_line(el)}" for el in goods)
+            return f"  {title}:\n{body}"
+
+        return (
+            f"Поставщик {self.__provider_id}\n"
+            f"{block('сейчас может отгрузить', self.__current_stock)}\n"
+            f"{block('полный ассортимент', self.__stock)}"
+        )

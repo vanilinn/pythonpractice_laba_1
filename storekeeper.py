@@ -1,6 +1,7 @@
 from order import Order
 # from store import Store
 from worker import Worker
+import console_view
 from datetime import datetime, timedelta
 
 
@@ -29,24 +30,21 @@ class Storekeeper(Worker):
         self.__store_id = store.id_of_store  # Записываем идентификатор магазина
         self.__status = 'свободен'  # Устанавливаем статус "свободен" для кладовщика
         store.get_worker(self)  # Добавляем кладовщика в список работников магазина
-        print(f'Кладовщик {self.__name} вышел на работу в магазин {store.id_of_store} на {job_time} часов')
+        console_view.print_shift_started(
+            "кладовщик", self.__name, store.id_of_store, job_time, self.__job_start, self.__job_end
+        )
 
     def get_order(self, store, order: Order):
         # Метод для получения заказа кладовщиком
         job_time = order.time_to_assemble  # Время, необходимое на сборку заказа
         self.__status = 'собирает'  # Устанавливаем статус "собирает" для кладовщика
-        for item in order.existing_items:
-            print(
-                f'Кладовщик {self.__name} собрал {item.title} из заказа {order.id}')  # Выводим информацию о собранных товарах
-        self.__status = 'свободен'  # Устанавливаем статус "свободен" для кладовщика
         self.__job_start = order.time_start + timedelta(seconds=job_time)  # Устанавливаем время окончания сборки заказа
+        earned = job_time * 5 // 60
         self.set_balance(
-            self.get_balance() + job_time * 5 // 60)  # Добавляем к балансу кладовщика оплату за сборку заказа
-        print(
-            f'Кладовщик {self.__name} собрал все предметы из заказа {order.id}')  # Выводим информацию о завершении сборки
+            self.get_balance() + earned)  # Добавляем к балансу кладовщика оплату за сборку заказа
         order.status = 'собран'  # Устанавливаем статус заказа как "собран"
-        print(
-            f'Кладовщик {self.__name} заработал {job_time * 5 // 60} рублей')  # Выводим информацию о заработке кладовщика
+        self.__status = 'свободен'  # Устанавливаем статус "свободен" для кладовщика
+        console_view.print_order_packed(self.__name, order, earned, self.get_balance())
         self.__order_id = None  # Обнуляем идентификатор заказа
 
     def get_job_start(self):
@@ -93,4 +91,7 @@ class Storekeeper(Worker):
         self.__balance = balance
 
     def __str__(self):
-        return f'Кладовщик {self.__name} {self.__status} в магазине {self.__store_id} с {self.__job_start} до {self.__job_end}'
+        return (
+            f"Кладовщик {self.__name}, {self.__status}, магазин {self.__store_id}, "
+            f"{console_view.format_money(self.__balance)}"
+        )

@@ -7,6 +7,9 @@ from store import Store
 import utils
 from storekeeper import Storekeeper
 from user import User
+import console_view
+
+console_view.print_intro()
 
 # Создание объектов класса Item (товары)
 item1 = Item('печенье', 100, 1, 1)
@@ -26,12 +29,16 @@ store1 = Store(1, (1, 1), [], [zavod1, pivsavod], schedule1)
 store2 = Store(2, (5, 5), [], [zavod1, pivsavod], schedule2)
 
 # Отправка запросов на поставку товаров в магазины
-store1.send_request([item1, item2, item4, item5])
-store2.send_request([item1, item2, item3, item4])
+console_view.heading("Поставка")
+store1.send_request([item1, item2, item4, item5], reason="старт")
+store2.send_request([item1, item2, item3, item4], reason="старт")
 
 # Создание объекта класса User (пользователь)
+console_view.heading("Покупатели")
 user1 = User('Вася', (10, 10))
 user2 = User('Петя', (20, 20))
+console_view.print_user(user1)
+console_view.print_user(user2)
 
 # Создание заказов пользователя
 order1 = user1.make_order([item1, item2, item3, item5])
@@ -39,6 +46,7 @@ order2 = user1.make_order([item1, item2])
 order3 = user2.make_order([item1, item5])
 
 # Создание объектов класса Courier (курьеры) и назначение им смен
+console_view.heading("Смены")
 courier1 = Courier(1, 'Курьер1')
 courier2 = Courier(2, 'Курьер2')
 courier1.get_shift(store1, 10)
@@ -60,8 +68,20 @@ order3_time = datetime(2022, 1, 1, 10, 2, 0)
 order1.time_start = order1_time
 order2.time_start = order2_time
 order3.time_start = order3_time
+console_view.heading("Заказы")
+console_view.print_order_created(user1, order1)
+console_view.print_order_created(user1, order2)
+console_view.print_order_created(user2, order3)
 
 # Определение самого быстрого магазина для выполнения заказов и назначение заказов этим магазинам
 utils.send_order_to_fastest_store(stores, order2)
 utils.send_order_to_fastest_store(stores, order1)
 utils.send_order_to_fastest_store(stores, order3)
+
+console_view.print_session_report(
+    stores,
+    [order1, order2, order3],
+    [user1, user2],
+    [courier1, courier2],
+    [storekeeper1, storekeeper2],
+)

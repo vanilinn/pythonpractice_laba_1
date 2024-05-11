@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+import console_view
+
 
 @dataclass
 class Item:
@@ -9,4 +11,4 @@ class Item:
     store_id: int | None
 
     def __str__(self):
-        return f'Товар {self.title} стоимостью {self.cost} из магазина {self.store_id} от поставщика {self.provider_id} \n'
+        return console_view.item_line(self)
