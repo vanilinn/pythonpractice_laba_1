@@ -5,7 +5,7 @@ from item import Item
 from order import Order
 from provider import Provider
 from storekeeper import Storekeeper
-from calculations import assemble_seconds, deliver_seconds
+from calculations import assemble_seconds, deliver_seconds, worker_unavailable
 import console_view
 
 
@@ -69,8 +69,16 @@ class Store:
             console_view.print_no_storekeepers()
             return None
         for storekeeper in self.list_of_storekeepers:
-            time_left = (storekeeper.get_job_end() - order.time_start).total_seconds()
-            if storekeeper.get_status() == 'свободен' and time_left >= order.time_to_assemble and storekeeper.get_job_start() <= order.time_start:
+            if worker_unavailable(
+                storekeeper.get_name(),
+                storekeeper.get_status(),
+                storekeeper.get_job_start(),
+                storekeeper.get_job_end(),
+                order.time_start,
+                order.time_start,
+                order.time_to_assemble,
+                "собрать",
+            ) is None:
                 order.status = 'собирается'
                 order.assembler = storekeeper.get_worker_id()
                 storekeeper.order_id = order.id
@@ -80,9 +88,17 @@ class Store:
             console_view.print_assemble_too_late()
             return None
         for courier in self.list_of_couriers:
-            time_left = (courier.get_job_end() - order.time_start).total_seconds() - order.time_to_assemble
-            if courier.get_status() == 'свободен' and time_left >= order.time_to_deliver and courier.get_job_start() <= order.time_start + timedelta(
-                    seconds=order.time_to_assemble):
+            courier_ready_at = order.time_start + timedelta(seconds=order.time_to_assemble)
+            if worker_unavailable(
+                courier.get_name(),
+                courier.get_status(),
+                courier.get_job_start(),
+                courier.get_job_end(),
+                order.time_start,
+                courier_ready_at,
+                order.time_to_assemble + order.time_to_deliver,
+                "доставить",
+            ) is None:
                 order.status = 'доставляется'
                 order.courier = courier.get_worker_id()
                 courier.order_id = order.id

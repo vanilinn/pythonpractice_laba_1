@@ -2,7 +2,7 @@ import math
 from datetime import timedelta
 import random
 
-from calculations import assemble_seconds, deliver_seconds
+from calculations import order_service_time, worker_unavailable
 import console_view
 
 
@@ -10,88 +10,69 @@ def _names(titles):
     return ", ".join(titles)
 
 
-def _keeper_problem(store, order, time_to_assemble):
-    problems = []
-    for storekeeper in store.list_of_storekeepers:
-        time_left = (storekeeper.get_job_end() - order.time_start).total_seconds()
-        name = storekeeper.get_name()
-        if storekeeper.get_status() != 'свободен':
-            problems.append(f"{name} занят ({storekeeper.get_status()})")
-            continue
-        if storekeeper.get_job_start() > order.time_start:
-            free_at = console_view.format_clock(storekeeper.get_job_start())
-            problems.append(f"{name} свободен только с {free_at}")
-            continue
-        if time_left < time_to_assemble:
-            problems.append(f"{name} не успевает собрать до конца смены")
-            continue
-        return None
-    if problems:
-        return "; ".join(problems)
-    return "нет свободного кладовщика"
+def _with_remark(remark, reason):
+    if remark:
+        return f"{remark}; {reason}"
+    return reason
 
 
-def _courier_problem(store, order, time_to_assemble, total_time):
+def _staff_problem(workers, order_start, must_be_free_by, needed_seconds, task):
     problems = []
-    for courier in store.list_of_couriers:
-        time_left = (courier.get_job_end() - order.time_start).total_seconds()
-        name = courier.get_name()
-        if courier.get_status() != 'свободен':
-            problems.append(f"{name} занят ({courier.get_status()})")
-            continue
-        if time_left < total_time:
-            problems.append(f"{name} не успевает доставить до конца смены")
-            continue
-        if courier.get_job_start() > order.time_start + timedelta(seconds=time_to_assemble):
-            free_at = console_view.format_clock(courier.get_job_start())
-            problems.append(f"{name} свободен только с {free_at}")
-            continue
-        return None
+    for worker in workers:
+        reason = worker_unavailable(
+            worker.get_name(),
+            worker.get_status(),
+            worker.get_job_start(),
+            worker.get_job_end(),
+            order_start,
+            must_be_free_by,
+            needed_seconds,
+            task,
+        )
+        if reason is None:
+            return None
+        problems.append(reason)
     if problems:
         return "; ".join(problems)
-    return "нет свободного курьера"
+    return None
 
 
 def assess_store(store, order):
     """Время обслуживания и короткая причина, если магазин заказ не берёт."""
-    store_coords = store.coords
-    order_coords = order.user_coords
-    store_stock = store.stock.copy()
-    missing = []
-    found = 0
-    for item in order.items:
-        if item in store_stock:
-            store_stock.remove(item)
-            found += 1
-        else:
-            missing.append(item.title)
-    time_to_assemble = assemble_seconds(found)
-    if time_to_assemble == 0:
+    total_time, time_to_assemble, missing = order_service_time(
+        store.stock,
+        order.items,
+        store.coords,
+        order.user_coords,
+    )
+    if total_time == math.inf:
         if missing:
             return math.inf, f"нет товаров: {_names(missing)}"
         return math.inf, "в заказе нет товаров"
-    total_time = deliver_seconds(store_coords, order_coords) + time_to_assemble
     remark = f"нет в наличии: {_names(missing)}" if missing else ""
     if len(store.list_of_storekeepers) == 0:
-        reason = "нет кладовщика"
-        if remark:
-            reason = f"{remark}; {reason}"
-        return math.inf, reason
+        return math.inf, _with_remark(remark, "нет кладовщика")
     if len(store.list_of_couriers) == 0:
-        reason = "нет курьера"
-        if remark:
-            reason = f"{remark}; {reason}"
-        return math.inf, reason
-    keeper_problem = _keeper_problem(store, order, time_to_assemble)
+        return math.inf, _with_remark(remark, "нет курьера")
+    keeper_problem = _staff_problem(
+        store.list_of_storekeepers,
+        order.time_start,
+        order.time_start,
+        time_to_assemble,
+        "собрать",
+    )
     if keeper_problem:
-        if remark:
-            keeper_problem = f"{remark}; {keeper_problem}"
-        return math.inf, keeper_problem
-    courier_problem = _courier_problem(store, order, time_to_assemble, total_time)
+        return math.inf, _with_remark(remark, keeper_problem)
+    courier_ready_at = order.time_start + timedelta(seconds=time_to_assemble)
+    courier_problem = _staff_problem(
+        store.list_of_couriers,
+        order.time_start,
+        courier_ready_at,
+        total_time,
+        "доставить",
+    )
     if courier_problem:
-        if remark:
-            courier_problem = f"{remark}; {courier_problem}"
-        return math.inf, courier_problem
+        return math.inf, _with_remark(remark, courier_problem)
     return total_time, remark
 
 
