@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 
+from calculations import service_pay
 from order import Order
 from worker import Worker
 import console_view
@@ -59,7 +60,7 @@ class Courier(Worker):
             # print(self.__job_start)
             console_view.print_courier_back(self.__name, store.id_of_store, self.__job_start)
             self.__status = 'свободен'  # Устанавливаем статус "свободен" для курьера
-            earned = job_time * 5 // 60
+            earned = service_pay(job_time)
             self.set_balance(
                 self.get_balance() + earned)  # Добавляем к балансу курьера оплату за доставку заказа
             console_view.print_courier_pay(self.__name, earned, self.get_balance())

@@ -2,6 +2,8 @@
 
 from datetime import datetime
 
+from calculations import service_pay
+
 
 def short_id(value):
     if value is None:
@@ -53,13 +55,6 @@ def format_coords(coords):
     if coords is None:
         return "—"
     return f"({coords[0]}, {coords[1]})"
-
-
-def service_fee(seconds):
-    """Та же ставка, что у оплаты кладовщика и курьера: 5 руб. за полную минуту."""
-    if not seconds or seconds == float("inf"):
-        return 0
-    return int(seconds) * 5 // 60
 
 
 def item_line(item):
@@ -187,8 +182,8 @@ def print_courier_pay(courier_name, earned, balance):
 def print_receipt(order):
     rows = [(item.title, item.cost) for item in order.existing_items]
     goods = sum(amount for _, amount in rows)
-    assembly = service_fee(order.time_to_assemble)
-    delivery = service_fee(order.time_to_deliver)
+    assembly = service_pay(order.time_to_assemble)
+    delivery = service_pay(order.time_to_deliver)
     rows.append(("сборка", assembly))
     rows.append(("доставка", delivery))
     total = goods + assembly + delivery
@@ -227,7 +222,7 @@ def print_session_report(stores, orders, users, couriers, storekeepers):
         extra = ""
         if order.status == "доставлен" and order.existing_items:
             goods = sum(item.cost for item in order.existing_items)
-            total = goods + service_fee(order.time_to_assemble) + service_fee(order.time_to_deliver)
+            total = goods + service_pay(order.time_to_assemble) + service_pay(order.time_to_deliver)
             extra = f", к оплате {format_money(total)}"
         elif getattr(order, "comment", None):
             extra = f", {order.comment}"

@@ -1,3 +1,4 @@
+from calculations import service_pay
 from order import Order
 # from store import Store
 from worker import Worker
@@ -39,7 +40,7 @@ class Storekeeper(Worker):
         job_time = order.time_to_assemble  # Время, необходимое на сборку заказа
         self.__status = 'собирает'  # Устанавливаем статус "собирает" для кладовщика
         self.__job_start = order.time_start + timedelta(seconds=job_time)  # Устанавливаем время окончания сборки заказа
-        earned = job_time * 5 // 60
+        earned = service_pay(job_time)
         self.set_balance(
             self.get_balance() + earned)  # Добавляем к балансу кладовщика оплату за сборку заказа
         order.status = 'собран'  # Устанавливаем статус заказа как "собран"

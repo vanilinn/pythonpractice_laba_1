@@ -5,9 +5,8 @@ from item import Item
 from order import Order
 from provider import Provider
 from storekeeper import Storekeeper
+from calculations import assemble_seconds, deliver_seconds
 import console_view
-
-import math
 
 
 class Store:
@@ -60,9 +59,8 @@ class Store:
             console_view.print_order_continued()
         self.send_request(order.existing_items, reason="пополнение")
         # self.send_request(order.existing_items)
-        order.time_to_assemble = len(order.existing_items) * 45
-        order.time_to_deliver = 60 + round(math.sqrt(
-            (self.coords[0] - order.user_coords[0]) ** 2 + (self.coords[1] - order.user_coords[1]) ** 2)) * 30 + 60
+        order.time_to_assemble = assemble_seconds(len(order.existing_items))
+        order.time_to_deliver = deliver_seconds(self.coords, order.user_coords)
         console_view.print_timing(order)
         if len(self.list_of_couriers) == 0:
             console_view.print_no_couriers()

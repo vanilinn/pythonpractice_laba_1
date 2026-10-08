@@ -2,6 +2,7 @@ import math
 from datetime import timedelta
 import random
 
+from calculations import assemble_seconds, deliver_seconds
 import console_view
 
 
@@ -55,22 +56,21 @@ def assess_store(store, order):
     """Время обслуживания и короткая причина, если магазин заказ не берёт."""
     store_coords = store.coords
     order_coords = order.user_coords
-    dist = round(math.sqrt((store_coords[0] - order_coords[0]) ** 2 + (
-                store_coords[1] - order_coords[1]) ** 2))
     store_stock = store.stock.copy()
     missing = []
-    time_to_assemble = 0
+    found = 0
     for item in order.items:
         if item in store_stock:
             store_stock.remove(item)
-            time_to_assemble += 45
+            found += 1
         else:
             missing.append(item.title)
+    time_to_assemble = assemble_seconds(found)
     if time_to_assemble == 0:
         if missing:
             return math.inf, f"нет товаров: {_names(missing)}"
         return math.inf, "в заказе нет товаров"
-    total_time = dist * 30 + time_to_assemble + 120
+    total_time = deliver_seconds(store_coords, order_coords) + time_to_assemble
     remark = f"нет в наличии: {_names(missing)}" if missing else ""
     if len(store.list_of_storekeepers) == 0:
         reason = "нет кладовщика"
