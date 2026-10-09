@@ -1,4 +1,5 @@
 from item import Item
+from calculations import pick_items
 import console_view
 
 
@@ -10,12 +11,13 @@ class Provider:  # поставщик
 
     def send_order(self, order: list[Item]):
         # Метод для отправки заказа складу
-        result = []
-        for elem in order:
-            if elem in self.__current_stock:
-                result.append(elem)
-                self.__current_stock.remove(elem)
-        return result
+        remaining, sent, _missing = pick_items(self.__current_stock, order)
+        # Раньше остаток и полный ассортимент могли быть одним списком,
+        # и удаление меняло оба. Теперь сохраняем новый список, не трогая старый.
+        if self.__current_stock is self.__stock:
+            self.__stock = remaining
+        self.__current_stock = remaining
+        return sent
 
     def update_stocks(self):
         # Метод для обновления запасов товаров на складе

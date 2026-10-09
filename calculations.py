@@ -24,18 +24,46 @@ def service_pay(seconds):
     return int(seconds) * 5 // 60
 
 
-def count_available(stock, items):
-    """Сколько позиций заказа есть в переданном списке и каких не хватает."""
+def append_item(items, item):
+    """Новый список с элементом в конце. Исходный список не меняется."""
+    result = list(items)
+    result.append(item)
+    return result
+
+
+def append_items(items, extra):
+    """Новый список, в конец которого добавлены все элементы extra."""
+    result = list(items)
+    result.extend(extra)
+    return result
+
+
+def without_first(items, item):
+    """Новый список без первого вхождения item. Исходный список не меняется."""
+    result = list(items)
+    if item in result:
+        result.remove(item)
+    return result
+
+
+def pick_items(stock, items):
+    """Новый остаток, что удалось взять и чего не было. Входные списки не меняются."""
     remaining = list(stock)
+    picked = []
     missing = []
-    found = 0
     for item in items:
         if item in remaining:
-            remaining.remove(item)
-            found += 1
+            remaining = without_first(remaining, item)
+            picked = append_item(picked, item)
         else:
-            missing.append(item.title)
-    return found, missing
+            missing = append_item(missing, item)
+    return remaining, picked, missing
+
+
+def count_available(stock, items):
+    """Сколько позиций заказа есть в переданном списке и каких не хватает."""
+    _remaining, picked, missing = pick_items(stock, items)
+    return len(picked), [item.title for item in missing]
 
 
 def order_service_time(stock, items, store_coords, user_coords):

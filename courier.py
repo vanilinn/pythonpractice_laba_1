@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from calculations import service_pay
+from calculations import service_pay, without_first
 from order import Order
 from worker import Worker
 import console_view
@@ -53,7 +53,7 @@ class Courier(Worker):
             self.__job_start = self.__job_end  # Переопределяем время начала смены курьера
             self.__order_id = None  # Обнуляем идентификатор заказа
             self.__status = 'уволен'  # Устанавливаем статус "уволен" для курьера
-            store.list_of_couriers.remove(self)  # Удаляем курьера из списка работников магазина
+            store.list_of_couriers = without_first(store.list_of_couriers, self)
         else:
             self.__job_start = order.time_start + timedelta(
                 seconds=job_time * 2 - 60)  # Вычисляем время возвращения курьера в магазин

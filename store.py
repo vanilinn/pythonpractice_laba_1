@@ -5,7 +5,7 @@ from item import Item
 from order import Order
 from provider import Provider
 from storekeeper import Storekeeper
-from calculations import assemble_seconds, deliver_seconds, worker_unavailable
+from calculations import append_item, append_items, assemble_seconds, deliver_seconds, pick_items, worker_unavailable
 import console_view
 
 
@@ -28,20 +28,16 @@ class Store:
             for elem in response:
                 elem.store_id = self.id_of_store
             provider.update_stocks()
-            self.stock.extend(response)
+            self.stock = append_items(self.stock, response)
             arrived.extend(response)
         console_view.print_supply(self.id_of_store, arrived, reason)
 
     # send_request - отправить заказ для провайдера (что привезти)
 
     def take_order(self, order: Order):  # принять заказ и начать его обрабатывать
-        missing = []
-        for item in order.items:
-            if item in self.stock:
-                self.stock.remove(item)
-                order.existing_items.append(item)
-            else:
-                missing.append(item.title)
+        self.stock, picked, missing_items = pick_items(self.stock, order.items)
+        order.existing_items = picked
+        missing = [item.title for item in missing_items]
         # order.existing_items = [item for item in order.items if item in self.stock]
         if len(order.existing_items) == 0:
             console_view.print_nothing_in_stock(order)
@@ -50,8 +46,8 @@ class Store:
             command = console_view.ask_partial_order(self.id_of_store, missing)
             if command == 'no':
                 returned = list(order.existing_items)
-                self.stock.extend(returned)
-                order.existing_items.clear()
+                self.stock = append_items(self.stock, returned)
+                order.existing_items = []
                 order.status = 'отменен'
                 order.comment = f"на склад возвращено: {', '.join(item.title for item in returned)}"
                 console_view.print_order_cancelled(order, returned)
@@ -111,10 +107,10 @@ class Store:
 
     def get_worker(self, worker):
         if isinstance(worker, Courier):
-            self.list_of_couriers.append(worker)
+            self.list_of_couriers = append_item(self.list_of_couriers, worker)
 
         elif isinstance(worker, Storekeeper):
-            self.list_of_storekeepers.append(worker)
+            self.list_of_storekeepers = append_item(self.list_of_storekeepers, worker)
         worker.set_store_id(self.id_of_store)
 
     # взять работника к себе и дать ему смену
