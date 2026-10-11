@@ -1,7 +1,9 @@
-from datetime import datetime  
+from datetime import datetime
+import uuid
 
 from courier import Courier
 from item import Item
+from order import make_order
 from provider import Provider
 from store import Store
 import utils
@@ -40,11 +42,6 @@ user2 = User('Петя', (20, 20))
 console_view.print_user(user1)
 console_view.print_user(user2)
 
-# Создание заказов пользователя
-order1 = user1.make_order([item1, item2, item3, item5])
-order2 = user1.make_order([item1, item2])
-order3 = user2.make_order([item1, item5])
-
 # Создание объектов класса Courier (курьеры) и назначение им смен
 console_view.heading("Смены")
 courier1 = Courier(1, 'Курьер1')
@@ -61,13 +58,13 @@ storekeeper2.get_shift(store2, 10)
 # Создание списка магазинов
 stores = [store1, store2]
 
-# Установка времени отправки заказов
+# Создание заказов: номер и время задаёт сценарий, а не сам объект пользователя
 order1_time = datetime(2022, 1, 1, 10, 1, 0)
 order2_time = datetime(2022, 1, 1, 10, 0, 0)
 order3_time = datetime(2022, 1, 1, 10, 2, 0)
-order1.time_start = order1_time
-order2.time_start = order2_time
-order3.time_start = order3_time
+order1 = make_order(uuid.uuid4().hex, [item1, item2, item3, item5], order1_time, user1.id, user1.coords)
+order2 = make_order(uuid.uuid4().hex, [item1, item2], order2_time, user1.id, user1.coords)
+order3 = make_order(uuid.uuid4().hex, [item1, item5], order3_time, user2.id, user2.coords)
 console_view.heading("Заказы")
 console_view.print_order_created(user1, order1)
 console_view.print_order_created(user1, order2)

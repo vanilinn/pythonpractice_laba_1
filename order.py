@@ -29,4 +29,22 @@ class Order:
             f"  {goods}{comment}"
         )
 
+
+def make_order(order_id, items, time_start, user_id, user_coords):
+    """Форма заказа. Идентификатор и время приходят снаружи, а не из часов и генератора."""
+    return Order(
+        id=order_id,
+        items=list(items),
+        status="создан",
+        existing_items=[],
+        time_to_assemble=None,
+        time_to_deliver=None,
+        time_start=time_start,
+        time_end=None,
+        assembler=None,
+        courier=None,
+        user_id=user_id,
+        user_coords=user_coords,
+    )
+
 # Что находится в заказе? Статус доставки, список товаров, время создания-время доставки, кто собирал-доставлял
