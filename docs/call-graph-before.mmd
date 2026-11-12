@@ -1,0 +1,43 @@
+flowchart LR
+subgraph L1["1. Действия и сценарий"]
+  direction TB
+  main["main"]
+  orchestration["send_order_to_fastest_store<br/>get_fastest_store<br/>Store.take_order"]
+  stateActions["Store.send_request / get_worker<br/>Provider.update_stocks<br/>Courier и Storekeeper: get_shift / get_order"]
+  effects["console_view: print_* / ask_partial_order<br/>input / random"]
+end
+
+subgraph L2["2. Смешанный слой"]
+  direction TB
+  mixed["assess_store / calculate_order_time<br/>Provider.send_order<br/>print_receipt / print_session_report<br/>вычисления + эффекты + мутации"]
+end
+
+subgraph L3["3. Вычисления"]
+  direction TB
+  domainCalc["order_service_time<br/>worker_unavailable<br/>assemble / deliver / service_pay"]
+  collectionCalc["pick_items<br/>append_item(s) / without_first"]
+end
+
+subgraph L4["4. Данные"]
+  direction TB
+  data["Item / Order / Store / Provider / Worker"]
+end
+
+subgraph L5["5. Конструкции языка"]
+  direction TB
+  language["for / if / list access<br/>copy / remove"]
+end
+
+main --> orchestration
+main --> stateActions
+main --> effects
+orchestration --> mixed
+orchestration --> stateActions
+stateActions --> mixed
+mixed --> domainCalc
+mixed --> collectionCalc
+domainCalc --> collectionCalc
+collectionCalc --> language
+orchestration --> collectionCalc
+stateActions --> language
+main --> data

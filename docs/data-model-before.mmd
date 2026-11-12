@@ -1,0 +1,12 @@
+flowchart LR
+  provider["Provider<br/>stock: list<br/>current_stock: list"]
+  store["Store<br/>stock: list<br/>providers / workers: list"]
+  order["Order<br/>items: list<br/>existing_items: list<br/>status / timings"]
+  item["Item<br/>изменяемый объект<br/>title / cost<br/>provider_id / store_id"]
+  workers["Worker<br/>Courier / Storekeeper<br/>изменяемое состояние"]
+
+  provider -->|"общая ссылка"| item
+  store -->|"общая ссылка"| item
+  order -->|"общая ссылка"| item
+  store --> workers
+

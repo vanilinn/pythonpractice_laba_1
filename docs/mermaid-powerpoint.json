@@ -1,0 +1,20 @@
+{
+  "theme": "base",
+  "htmlLabels": false,
+  "flowchart": {
+    "htmlLabels": false,
+    "useMaxWidth": true
+  },
+  "themeVariables": {
+    "fontFamily": "Arial",
+    "fontSize": "18px",
+    "primaryColor": "#EAF2F8",
+    "primaryTextColor": "#111827",
+    "primaryBorderColor": "#334155",
+    "lineColor": "#475569",
+    "secondaryColor": "#F8FAFC",
+    "tertiaryColor": "#FFFFFF",
+    "clusterBkg": "#F8FAFC",
+    "clusterBorder": "#64748B"
+  }
+}
