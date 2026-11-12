@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import console_view
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class Item:
     title: str
     cost: int

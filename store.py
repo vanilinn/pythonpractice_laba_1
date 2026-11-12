@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import timedelta, datetime
 
 from courier import Courier
@@ -25,8 +26,10 @@ class Store:
         arrived = []
         for provider in self.list_of_providers:
             response = provider.send_order(request)
-            for elem in response:
-                elem.store_id = self.id_of_store
+            response = [
+                replace(elem, store_id=self.id_of_store)
+                for elem in response
+            ]
             provider.update_stocks()
             self.stock = append_items(self.stock, response)
             arrived.extend(response)
