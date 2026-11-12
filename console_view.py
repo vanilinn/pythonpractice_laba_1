@@ -3,6 +3,7 @@
 from datetime import datetime
 
 from calculations import service_pay
+from reporting import build_receipt, build_session_summary
 
 
 def short_id(value):
@@ -180,19 +181,14 @@ def print_courier_pay(courier_name, earned, balance):
 
 
 def print_receipt(order):
-    rows = [(item.title, item.cost) for item in order.existing_items]
-    goods = sum(amount for _, amount in rows)
-    assembly = service_pay(order.time_to_assemble)
-    delivery = service_pay(order.time_to_deliver)
-    rows.append(("сборка", assembly))
-    rows.append(("доставка", delivery))
-    total = goods + assembly + delivery
+    receipt = build_receipt(order)
+    rows = receipt.rows
     label_width = max(len(name) for name, _ in rows)
     line("Чек")
     for name, amount in rows:
         line(f"{name:<{label_width}}  {amount:>4} руб.", indent=2)
-    line(f"{'итого':<{label_width}}  {total:>4} руб.", indent=2)
-    return total
+    line(f"{'итого':<{label_width}}  {receipt.total:>4} руб.", indent=2)
+    return receipt.total
 
 
 def print_user_accepted():
@@ -248,12 +244,14 @@ def print_session_report(stores, orders, users, couriers, storekeepers):
             f"{courier.get_status()}, {format_money(courier.get_balance())}"
         )
 
-    delivered = sum(1 for order in orders if order.status == "доставлен")
-    cancelled = sum(1 for order in orders if order.status == "отменен")
-    declined = sum(1 for order in orders if order.status == "не принят")
-    keeper_pay = sum(worker.get_balance() for worker in storekeepers)
-    courier_pay = sum(worker.get_balance() for worker in couriers)
+    summary = build_session_summary(orders, couriers, storekeepers)
     heading("Счёт")
-    line(f"Заказов {len(orders)}: доставлено {delivered}, отменено {cancelled}, не принято {declined}.")
-    line(f"Кладовщикам {format_money(keeper_pay)}, курьерам {format_money(courier_pay)}")
+    line(
+        f"Заказов {len(orders)}: доставлено {summary.delivered}, "
+        f"отменено {summary.cancelled}, не принято {summary.declined}."
+    )
+    line(
+        f"Кладовщикам {format_money(summary.keeper_pay)}, "
+        f"курьерам {format_money(summary.courier_pay)}"
+    )
     print()
