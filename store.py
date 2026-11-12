@@ -6,7 +6,8 @@ from item import Item
 from order import Order
 from provider import Provider
 from storekeeper import Storekeeper
-from calculations import append_item, append_items, assemble_seconds, deliver_seconds, pick_items, worker_unavailable
+from calculations import append_item, append_items, worker_unavailable
+from order_planning import build_order_plan
 import console_view
 
 
@@ -37,16 +38,22 @@ class Store:
 
     # send_request - отправить заказ для провайдера (что привезти)
 
-    def take_order(self, order: Order):  # принять заказ и начать его обрабатывать
-        self.stock, picked, missing_items = pick_items(self.stock, order.items)
-        order.existing_items = picked
+    def take_order(
+        self,
+        order: Order,
+        decide_partial=console_view.ask_partial_order,
+    ):  # принять заказ и начать его обрабатывать
+        plan = build_order_plan(self, order)
+        self.stock = list(plan.remaining_stock)
+        order.existing_items = list(plan.picked_items)
+        missing_items = list(plan.missing_items)
         missing = [item.title for item in missing_items]
         # order.existing_items = [item for item in order.items if item in self.stock]
         if len(order.existing_items) == 0:
             console_view.print_nothing_in_stock(order)
             return None
         if missing:
-            command = console_view.ask_partial_order(self.id_of_store, missing)
+            command = decide_partial(self.id_of_store, missing)
             if command == 'no':
                 returned = list(order.existing_items)
                 self.stock = append_items(self.stock, returned)
@@ -58,8 +65,8 @@ class Store:
             console_view.print_order_continued()
         self.send_request(order.existing_items, reason="пополнение")
         # self.send_request(order.existing_items)
-        order.time_to_assemble = assemble_seconds(len(order.existing_items))
-        order.time_to_deliver = deliver_seconds(self.coords, order.user_coords)
+        order.time_to_assemble = plan.assemble_time
+        order.time_to_deliver = plan.deliver_time
         console_view.print_timing(order)
         if len(self.list_of_couriers) == 0:
             console_view.print_no_couriers()
