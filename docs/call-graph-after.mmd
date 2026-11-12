@@ -1,0 +1,41 @@
+flowchart LR
+subgraph L1["1. Действия и адаптеры"]
+  direction TB
+  run["run_demo"]
+  actions["send_order_to_fastest_store<br/>get_fastest_store<br/>Store.take_order / send_request / get_worker<br/>Provider и Worker: действия"]
+  adapters["console_view: print / input<br/>UUID / random"]
+end
+
+subgraph L2["2. Доменные правила"]
+  direction TB
+  plans["build_order_plan / assess_store<br/>select_fastest_store<br/>build_receipt / build_session_summary<br/>только вычисления"]
+end
+
+subgraph L3["3. Базовые вычисления и КПЗ"]
+  direction TB
+  domainCalc["order_service_time<br/>worker_unavailable<br/>assemble / deliver / service_pay"]
+  collectionCalc["pick_items<br/>append_item(s) / without_first<br/>dataclasses.replace"]
+end
+
+subgraph L4["4. Данные"]
+  direction TB
+  values["Item (frozen)<br/>OrderPlan / StoreSelection<br/>Receipt / SessionSummary"]
+  process["Order / Store / Provider / Worker"]
+end
+
+subgraph L5["5. Конструкции языка"]
+  direction TB
+  language["tuple / list<br/>for / if / field access"]
+end
+
+run --> actions
+run --> adapters
+actions --> plans
+actions --> adapters
+plans --> domainCalc
+plans --> collectionCalc
+plans --> values
+domainCalc --> collectionCalc
+collectionCalc --> language
+values --> language
+actions --> process

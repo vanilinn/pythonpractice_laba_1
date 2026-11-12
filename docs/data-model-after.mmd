@@ -1,0 +1,15 @@
+flowchart LR
+  provider["Provider<br/>владеет запасом"]
+  store["Store<br/>владеет запасом<br/>и списками работников"]
+  order["Order<br/>изменяемое состояние<br/>процесса доставки"]
+  item["Item<br/>frozen-значение<br/>title / cost<br/>provider_id / store_id"]
+  workers["Worker<br/>Courier / Storekeeper<br/>изменяемое состояние"]
+
+  provider -->|"значения"| item
+  store -->|"копия при записи"| item
+  order -->|"снимок товаров"| item
+  store --> workers
+
+  results["Неизменяемые результаты<br/>OrderPlan / StoreSelection<br/>Receipt / SessionSummary"]
+  item --> results
+  order --> results
